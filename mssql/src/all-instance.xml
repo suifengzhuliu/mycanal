@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:lang="http://www.springframework.org/schema/lang"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+           http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.0.xsd
+           http://www.springframework.org/schema/lang http://www.springframework.org/schema/lang/spring-lang-2.0.xsd
+           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-2.0.xsd
+           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+           http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd "
+	default-autowire="byName">
+
+	<!-- properties -->
+	<bean
+		class="com.alibaba.otter.canal.instance.spring.support.PropertyPlaceholderConfigurer"
+		lazy-init="false">
+		<property name="ignoreResourceNotFound" value="true" />
+		<property name="systemPropertiesModeName" value="SYSTEM_PROPERTIES_MODE_OVERRIDE" /><!-- 
+			允许system覆盖 -->
+		<property name="locationNames">
+			<list>
+				<value>classpath:canal.properties</value>
+				<value>classpath:databases/${canal.instance.ms.destination:}.properties
+				</value>
+			</list>
+		</property>
+	</bean>
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver" />
+		<property name="url"
+			value="jdbc:sqlserver://${canal.instance.dbAddress}:${canal.instance.dbPort};DatabaseName=${canal.instance.dbName}" />
+		<property name="username" value="${canal.instance.dbUsername}" />
+		<property name="password" value="${canal.instance.dbPassword}" />
+		
+	<!-- 	<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url"
+			value="jdbc:mysql://localhost:3306/test" />
+		<property name="username" value="root" />
+		<property name="password" value="root" /> -->
+		
+
+		<!-- 默认值是 0, 连接池创建连接的初始连接数目 -->
+		<property name="initialSize" value="2" />
+		<!-- 默认是 0, 连接数中最小空闲连接数 -->
+		<property name="minIdle" value="2" />
+		<!-- 默认值是 8, 连接池中同时可以分派的最大活跃连接数 -->
+		<property name="maxActive" value="8" />
+		<!-- 默认是 8 ，连接池中最大空闲连接数 -->
+		<property name="maxIdle" value="5" />
+		<!-- 默认值是无限大，当连接池中连接已经用完了，等待建立一个新连接的最大毫秒数 ( 在抛异常之前 ) -->
+		<property name="maxWait" value="60000" />
+		<!-- 默认值是 false, 是否清理 removeAbandonedTimeout 秒没有使用的活动连接 , 清理后并没有放回连接池 -->
+		<property name="removeAbandoned" value="true" />
+		<!-- 默认值是 300( 秒 ), 活动连接的最大空闲时间 -->
+		<property name="removeAbandonedTimeout" value="180" />
+		<!-- 当建立一个数据库连接的时候，这些属性参数将传给 jdbc driver，参数的形式必须是 [propertypropertyName=property;]*。 
+			<property name="connectionProperties"> <value>clientEncoding=utf-8</value> 
+			</property> -->
+
+		<!-- validate配置，重连配置 -->
+		<!-- 默认值是 false, 当连接池中的空闲连接是否有效 -->
+		<property name="testWhileIdle" value="true" />
+		<!-- 默认值是 true ，当从连接池取连接时，验证这个连接是否有效 -->
+		<property name="testOnBorrow" value="false" />
+		<!-- 默认值是 flase, 当从把该连接放回到连接池的时，验证这个连接是否有效 -->
+		<property name="testOnReturn" value="false" />
+		<!-- 在执行检查时超时设置，通过statement 设置，statement.setQueryTimeout(validationQueryTimeout) -->
+		<property name="validationQueryTimeout" value="1" />
+		<!-- 默认值是 -1 ，每隔一段多少毫秒跑一次回收空闲线程的线程 -->
+		<property name="timeBetweenEvictionRunsMillis" value="60000" />
+		<!-- 默认值是 3 ，每次验证空闲连接的连接数目 -->
+		<property name="numTestsPerEvictionRun" value="8" />
+	</bean>
+
+	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="dataSource"></property>
+	</bean>
+
+
+	<bean id="dbParser" class="canal.alibaba.otter.canal.extract.impl.MSSQLAllParse">
+		<property name="jdbcTemplate" ref="jdbcTemplate"></property>
+		<property name="destination" value="${canal.instance.ms.destination}" />
+		<property name="dbAddress" value="${canal.instance.dbAddress}" />
+		<property name="dbPort" value="${canal.instance.dbPort}" />
+		<property name="dbName" value="${canal.instance.dbName}" />
+		<property name="tableName" value="${canal.instance.tableName}" />
+		<property name="kafkaTopic" value="${canal.kafka.topic}" />
+		<property name="taskInverval" value="${canal.instance.task.interval:5}" />
+		<property name="taskDelay" value="${canal.instance.task.delay:0}" />
+		<property name="zkServers" value="${canal.zkServers}" />
+		
+	</bean>
+
+</beans>
